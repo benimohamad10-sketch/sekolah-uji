@@ -1,0 +1,345 @@
+<html lang="id"><style>* { -webkit-text-size-adjust: 109.00000000000001% !important; }</style><head><style>
+@font-face {
+  font-family: "Optimistic";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Optimistic Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
+}
+:where(html) {
+  font-family: "Optimistic", system-ui, sans-serif;
+}
+:where(code, pre, kbd, samp) {
+  font-family: "Optimistic Mono", ui-monospace, monospace;
+}
+</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="description" content="SekolahUjian SMK - Platform manajemen ujian berbasis Google Apps Script untuk Guru/Admin dan Siswa SMK">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>SekolahUjian SMK - Manajemen Ujian Terintegrasi</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:,">
+</head>
+<body>
+  <!-- Skip Link Aksesibilitas -->
+  <a href="#main-content" id="skip-to-content" class="skip-link">Lewati ke konten utama</a>
+
+  <!-- Config JSON untuk Script.js - JANGAN HAPUS -->
+  <script type="application/json" id="app-config">
+    {
+      "appName": "SekolahUjian SMK",
+      "version": "1.0.0",
+      "gasEndpointUrl": "",
+      "roles": ["guru", "siswa"],
+      "maxExamTimeMinutes": 90
+    }
+  </script>
+
+  <header id="app-header" role="banner">
+    <div class="header-inner">
+      <div id="brand" class="brand" aria-label="Logo SekolahUjian SMK">
+        <span id="brand-icon" aria-hidden="true">🎓</span>
+        <h1 id="brand-title">SekolahUjian <span id="brand-subtitle">SMK</span></h1>
+      </div>
+
+      <!-- Role Switcher - WAJIB sesuai Script.js -->
+      <nav id="role-switcher" class="role-switcher" role="navigation" aria-label="Ganti peran pengguna">
+        <span id="role-switcher-label" class="sr-only">Pilih peran:</span>
+        <div class="role-switcher-group" role="group" aria-labelledby="role-switcher-label">
+          <button id="role-switch-guru" class="btn-role active" type="button" role="tab" aria-selected="true" aria-controls="guru-view" data-role="guru">
+            <span aria-hidden="true">👨‍🏫</span> Guru/Admin
+          </button>
+          <button id="role-switch-siswa" class="btn-role" type="button" role="tab" aria-selected="false" aria-controls="siswa-view" data-role="siswa">
+            <span aria-hidden="true">👨‍🎓</span> Siswa
+          </button>
+        </div>
+      </nav>
+
+      <div id="header-actions" class="header-actions">
+        <button id="btn-open-gas-settings" class="btn btn-secondary" type="button" aria-haspopup="dialog" aria-controls="dialog-gas-endpoint" title="Atur Endpoint Google Apps Script">
+          <span aria-hidden="true">⚙️</span> <span id="label-gas-settings">Endpoint GAS</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main-content" class="main-layout" role="main">
+
+    <!-- ================= GURU / ADMIN VIEW ================= -->
+    <div id="guru-view" class="view active" role="tabpanel" aria-labelledby="role-switch-guru">
+      
+      <aside id="guru-sidebar" class="sidebar" role="navigation" aria-label="Menu Guru">
+        <div id="guru-info" class="guru-info">
+          <p id="guru-info-name" class="guru-name">Guru SMK</p>
+          <p id="guru-info-endpoint" class="guru-endpoint" aria-live="polite">Endpoint GAS: belum diatur</p>
+        </div>
+        <nav id="guru-nav" class="sidebar-nav">
+          <button id="nav-dashboard" class="nav-item active" type="button" data-panel="panel-dashboard" aria-current="page"><span aria-hidden="true">📊</span> Dashboard</button>
+          <button id="nav-kelas" class="nav-item" type="button" data-panel="panel-kelas"><span aria-hidden="true">🏫</span> Kelas</button>
+          <button id="nav-siswa" class="nav-item" type="button" data-panel="panel-siswa"><span aria-hidden="true">👥</span> Siswa</button>
+          <button id="nav-bank-soal" class="nav-item" type="button" data-panel="panel-bank-soal"><span aria-hidden="true">📚</span> Bank Soal</button>
+          <button id="nav-ai-review" class="nav-item" type="button" data-panel="panel-ai-review"><span aria-hidden="true">🤖</span> AI Review</button>
+          <button id="nav-buat-ujian" class="nav-item" type="button" data-panel="panel-buat-ujian"><span aria-hidden="true">📝</span> Buat Ujian</button>
+          <button id="nav-hasil" class="nav-item" type="button" data-panel="panel-hasil"><span aria-hidden="true">📈</span> Hasil</button>
+        </nav>
+      </aside>
+
+      <section id="guru-content" class="content-area">
+        
+        <!-- Dashboard -->
+        <section id="panel-dashboard" class="panel active" role="region" aria-labelledby="title-dashboard">
+          <h2 id="title-dashboard">Dashboard</h2>
+          <div class="stats-grid">
+            <div id="stat-kelas" class="stat-card"><h3 id="stat-kelas-label">Total Kelas</h3><p id="stat-kelas-value" aria-live="polite">0</p></div>
+            <div id="stat-siswa" class="stat-card"><h3 id="stat-siswa-label">Total Siswa</h3><p id="stat-siswa-value" aria-live="polite">0</p></div>
+            <div id="stat-soal" class="stat-card"><h3 id="stat-soal-label">Bank Soal</h3><p id="stat-soal-value" aria-live="polite">0</p></div>
+            <div id="stat-ujian" class="stat-card"><h3 id="stat-ujian-label">Ujian Aktif</h3><p id="stat-ujian-value" aria-live="polite">0</p></div>
+          </div>
+          <div id="dashboard-recent" class="card">
+            <h3 id="dashboard-recent-title">Aktivitas Terbaru</h3>
+            <ul id="dashboard-recent-list" aria-live="polite"></ul>
+          </div>
+          <p id="error-dashboard" class="error-message" role="alert" aria-live="assertive"></p>
+        </section>
+
+        <!-- Kelas -->
+        <section id="panel-kelas" class="panel" role="region" aria-labelledby="title-kelas" hidden="">
+          <h2 id="title-kelas">Manajemen Kelas</h2>
+          <div id="kelas-form-wrapper" class="card">
+            <label for="input-kelas-nama">Nama Kelas <span aria-hidden="true">*</span></label>
+            <input id="input-kelas-nama" type="text" placeholder="Contoh: XII TKJ 1" required="" aria-required="true" autocomplete="off">
+            <label for="input-kelas-jurusan">Jurusan</label>
+            <input id="input-kelas-jurusan" type="text" placeholder="TKJ, RPL, MM..." autocomplete="off">
+            <label for="input-kelas-tahun">Tahun Ajaran</label>
+            <input id="input-kelas-tahun" type="text" placeholder="2025/2026">
+            <div class="form-actions">
+              <button id="btn-kelas-simpan" class="btn btn-primary" type="button">Simpan Kelas</button>
+              <button id="btn-kelas-batal" class="btn btn-ghost" type="button">Batal</button>
+            </div>
+            <p id="error-kelas" class="error-message" role="alert"></p>
+          </div>
+          <div id="kelas-list-wrapper" class="card">
+            <h3 id="kelas-list-title">Daftar Kelas</h3>
+            <div id="kelas-list" role="list" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <!-- Siswa -->
+        <section id="panel-siswa" class="panel" role="region" aria-labelledby="title-siswa" hidden="">
+          <h2 id="title-siswa">Manajemen Siswa</h2>
+          <div id="siswa-form-wrapper" class="card">
+            <div class="grid-2">
+              <div><label for="input-siswa-nis">NIS</label><input id="input-siswa-nis" type="text" required=""></div>
+              <div><label for="input-siswa-nama">Nama Lengkap</label><input id="input-siswa-nama" type="text" required=""></div>
+            </div>
+            <label for="select-siswa-kelas">Kelas</label>
+            <select id="select-siswa-kelas" required=""><option value="">-- Pilih Kelas --</option></select>
+            <div class="form-actions">
+              <button id="btn-siswa-simpan" class="btn btn-primary" type="button">Simpan Siswa</button>
+              <button id="btn-siswa-import" class="btn btn-secondary" type="button">Import CSV</button>
+              <input id="input-siswa-import-file" type="file" accept=".csv" hidden="" aria-hidden="true">
+            </div>
+            <p id="error-siswa" class="error-message" role="alert"></p>
+          </div>
+          <div id="siswa-list-wrapper" class="card">
+            <h3 id="siswa-list-title">Daftar Siswa</h3>
+            <div id="siswa-list" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <!-- Bank Soal -->
+        <section id="panel-bank-soal" class="panel" role="region" aria-labelledby="title-bank-soal" hidden="">
+          <h2 id="title-bank-soal">Bank Soal SMK</h2>
+          <div id="bank-soal-form-wrapper" class="card">
+            <label for="select-bank-soal-mapel">Mata Pelajaran</label>
+            <select id="select-bank-soal-mapel"><option>Produktif TKJ</option><option>Produktif RPL</option><option>Matematika</option><option>Bahasa Indonesia</option></select>
+            <label for="input-bank-soal-pertanyaan">Pertanyaan</label>
+            <textarea id="input-bank-soal-pertanyaan" rows="3" required=""></textarea>
+            <div id="bank-soal-opsi" class="opsi-grid">
+              <label for="input-bank-soal-opsi-a">Opsi A</label><input id="input-bank-soal-opsi-a" type="text">
+              <label for="input-bank-soal-opsi-b">Opsi B</label><input id="input-bank-soal-opsi-b" type="text">
+              <label for="input-bank-soal-opsi-c">Opsi C</label><input id="input-bank-soal-opsi-c" type="text">
+              <label for="input-bank-soal-opsi-d">Opsi D</label><input id="input-bank-soal-opsi-d" type="text">
+            </div>
+            <label for="select-bank-soal-kunci">Kunci Jawaban</label>
+            <select id="select-bank-soal-kunci"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
+            <div class="form-actions">
+              <button id="btn-bank-soal-simpan" class="btn btn-primary" type="button">Simpan ke Bank Soal</button>
+            </div>
+            <p id="error-bank-soal" class="error-message" role="alert"></p>
+          </div>
+          <div id="bank-soal-list-wrapper" class="card"><h3 id="bank-soal-list-title">Koleksi Soal</h3><div id="bank-soal-list" aria-live="polite"></div></div>
+        </section>
+
+        <!-- AI Review -->
+        <section id="panel-ai-review" class="panel" role="region" aria-labelledby="title-ai-review" hidden="">
+          <h2 id="title-ai-review">AI Review &amp; Generator</h2>
+          <div id="ai-review-card" class="card">
+            <label for="input-ai-prompt">Prompt AI (Generate Soal Otomatis)</label>
+            <textarea id="input-ai-prompt" rows="4" placeholder="Contoh: Buatkan 10 soal pilihan ganda tentang jaringan komputer untuk kelas XII TKJ..."></textarea>
+            <div class="form-actions">
+              <button id="btn-ai-generate" class="btn btn-primary" type="button">Generate dengan AI</button>
+            </div>
+            <div id="ai-review-output" class="ai-output" aria-live="polite" role="region" aria-label="Hasil AI"></div>
+            <p id="error-ai-review" class="error-message" role="alert"></p>
+          </div>
+        </section>
+
+        <!-- Buat Ujian -->
+        <section id="panel-buat-ujian" class="panel" role="region" aria-labelledby="title-buat-ujian" hidden="">
+          <h2 id="title-buat-ujian">Buat Ujian Baru</h2>
+          <div id="buat-ujian-form-wrapper" class="card">
+            <label for="input-ujian-judul">Judul Ujian</label><input id="input-ujian-judul" type="text" required="">
+            <div class="grid-2">
+              <div><label for="select-ujian-kelas">Kelas Target</label><select id="select-ujian-kelas" multiple="" aria-describedby="help-ujian-kelas"></select><small id="help-ujian-kelas">Tahan Ctrl untuk pilih banyak</small></div>
+              <div><label for="input-ujian-durasi">Durasi (menit)</label><input id="input-ujian-durasi" type="number" min="5" max="180" value="60"></div>
+            </div>
+            <label for="input-ujian-tanggal">Tanggal Pelaksanaan</label><input id="input-ujian-tanggal" type="datetime-local">
+            <div id="ujian-soal-selector" class="card"><h3 id="ujian-soal-selector-title">Pilih Soal dari Bank</h3><div id="ujian-soal-list" aria-live="polite"></div></div>
+            <div class="form-actions">
+              <button id="btn-ujian-simpan" class="btn btn-primary" type="button">Publish Ujian</button>
+              <button id="btn-ujian-preview" class="btn btn-secondary" type="button">Preview</button>
+            </div>
+            <p id="error-buat-ujian" class="error-message" role="alert"></p>
+          </div>
+        </section>
+
+        <!-- Hasil -->
+        <section id="panel-hasil" class="panel" role="region" aria-labelledby="title-hasil" hidden="">
+          <h2 id="title-hasil">Hasil Ujian</h2>
+          <div id="hasil-filter" class="card">
+            <label for="select-hasil-ujian">Filter Ujian</label><select id="select-hasil-ujian"><option value="">Semua Ujian</option></select>
+            <button id="btn-hasil-export" class="btn btn-secondary" type="button">Export Excel</button>
+          </div>
+          <div id="hasil-table-wrapper" class="card table-responsive">
+            <table id="hasil-table" class="data-table">
+              <thead><tr><th id="th-nama">Nama</th><th id="th-kelas">Kelas</th><th id="th-nilai">Nilai</th><th id="th-waktu">Waktu</th><th id="th-aksi">Aksi</th></tr></thead>
+              <tbody id="hasil-table-body"></tbody>
+            </table>
+          </div>
+          <p id="error-hasil" class="error-message" role="alert"></p>
+        </section>
+
+      </section>
+    </div>
+
+    <!-- ================= SISWA VIEW ================= -->
+    <div id="siswa-view" class="view" role="tabpanel" aria-labelledby="role-switch-siswa" hidden="">
+      
+      <!-- Login Siswa -->
+      <section id="siswa-login-section" class="siswa-center" aria-labelledby="title-siswa-login">
+        <div id="siswa-login-card" class="card login-card">
+          <h2 id="title-siswa-login">Masuk Ujian</h2>
+          <label for="input-exam-nis">NIS</label><input id="input-exam-nis" type="text" inputmode="numeric" autocomplete="username" required="">
+          <label for="input-exam-token">Token Ujian</label><input id="input-exam-token" type="text" autocomplete="off" required="">
+          <button id="btn-exam-login" class="btn btn-primary btn-block" type="button">Mulai Ujian</button>
+          <p id="error-exam-login" class="error-message" role="alert"></p>
+        </div>
+      </section>
+
+      <!-- Area Ujian Fullscreen -->
+      <section id="exam-area" class="exam-area" role="region" aria-labelledby="title-exam" hidden="">
+        <header id="exam-header" class="exam-header">
+          <div id="exam-info">
+            <h2 id="title-exam">Ujian Berlangsung</h2>
+            <p id="exam-meta" aria-live="polite">SMK - Soal <span id="exam-current-number">1</span> / <span id="exam-total-number">0</span></p>
+          </div>
+          <div id="exam-controls" class="exam-controls">
+            <div id="exam-timer-wrapper" class="timer" role="timer" aria-live="off" aria-atomic="true">
+              <span id="exam-timer-label">Sisa Waktu:</span>
+              <span id="exam-timer" class="timer-value">60:00</span>
+            </div>
+            <button id="btn-fullscreen-enter" class="btn btn-icon" type="button" aria-label="Masuk mode layar penuh">⛶ Fullscreen</button>
+            <button id="btn-fullscreen-exit" class="btn btn-icon" type="button" aria-label="Keluar mode layar penuh" hidden="">Keluar Fullscreen</button>
+          </div>
+        </header>
+
+        <div id="exam-body" class="exam-body">
+          <aside id="exam-navigator" class="exam-navigator" aria-label="Navigasi soal">
+            <h3 id="exam-navigator-title">Nomor Soal</h3>
+            <div id="exam-question-grid" class="question-grid" role="group" aria-label="Daftar nomor soal"></div>
+          </aside>
+
+          <article id="exam-question-card" class="card exam-question-card">
+            <div id="exam-question-content">
+              <p id="exam-question-text" class="question-text">Memuat soal...</p>
+              <fieldset id="exam-options-fieldset" class="exam-options">
+                <legend id="exam-options-legend" class="sr-only">Pilihan jawaban</legend>
+                <label id="label-exam-option-a" class="option-label"><input id="input-exam-option-a" type="radio" name="exam-option" value="A"><span id="text-exam-option-a">Opsi A</span></label>
+                <label id="label-exam-option-b" class="option-label"><input id="input-exam-option-b" type="radio" name="exam-option" value="B"><span id="text-exam-option-b">Opsi B</span></label>
+                <label id="label-exam-option-c" class="option-label"><input id="input-exam-option-c" type="radio" name="exam-option" value="C"><span id="text-exam-option-c">Opsi C</span></label>
+                <label id="label-exam-option-d" class="option-label"><input id="input-exam-option-d" type="radio" name="exam-option" value="D"><span id="text-exam-option-d">Opsi D</span></label>
+              </fieldset>
+            </div>
+            <div id="exam-question-actions" class="form-actions">
+              <button id="btn-exam-prev" class="btn btn-secondary" type="button">Sebelumnya</button>
+              <button id="btn-exam-next" class="btn btn-primary" type="button">Selanjutnya</button>
+              <button id="btn-exam-submit" class="btn btn-danger" type="button">Selesai &amp; Kumpulkan</button>
+            </div>
+            <p id="error-exam" class="error-message" role="alert"></p>
+          </article>
+        </div>
+      </section>
+
+      <!-- Hasil Siswa -->
+      <section id="siswa-result-section" class="siswa-center" hidden="" aria-labelledby="title-siswa-result">
+        <div id="siswa-result-card" class="card"><h2 id="title-siswa-result">Ujian Selesai</h2><p id="siswa-result-score" aria-live="polite"></p><button id="btn-exam-logout" class="btn btn-secondary" type="button">Keluar</button></div>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- Dialog Pengaturan Endpoint GAS -->
+  <dialog id="dialog-gas-endpoint" class="dialog" aria-labelledby="dialog-gas-title" aria-describedby="dialog-gas-desc">
+    <form id="form-gas-endpoint" method="dialog" class="dialog-form">
+      <header class="dialog-header">
+        <h2 id="dialog-gas-title">Pengaturan Endpoint GAS</h2>
+        <button id="btn-dialog-gas-close" class="btn btn-icon" type="button" aria-label="Tutup dialog">✕</button>
+      </header>
+      <div class="dialog-body">
+        <p id="dialog-gas-desc">Masukkan URL Web App Google Apps Script yang sudah di-deploy. Semua data Kelas, Siswa, Bank Soal, dan Ujian akan tersinkronisasi melalui endpoint ini.</p>
+        <label for="input-gas-endpoint">URL Endpoint GAS</label>
+        <input id="input-gas-endpoint" type="url" placeholder="https://script.google.com/macros/s/XXXX/exec" required="" autocomplete="url" aria-describedby="help-gas-endpoint error-gas-endpoint">
+        <small id="help-gas-endpoint">Contoh: https://script.google.com/macros/s/AKfycb.../exec</small>
+        <label for="input-gas-token">Token (Opsional)</label>
+        <input id="input-gas-token" type="password" placeholder="Token keamanan jika ada" autocomplete="off">
+        <p id="error-gas-endpoint" class="error-message" role="alert"></p>
+      </div>
+      <footer class="dialog-footer form-actions">
+        <button id="btn-gas-test" class="btn btn-secondary" type="button">Test Koneksi</button>
+        <button id="btn-gas-save" class="btn btn-primary" type="submit" value="save">Simpan Endpoint</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Dialog Konfirmasi Submit Ujian -->
+  <dialog id="dialog-exam-confirm" class="dialog" aria-labelledby="dialog-exam-confirm-title">
+    <form id="form-exam-confirm" method="dialog" class="dialog-form">
+      <h2 id="dialog-exam-confirm-title">Kumpulkan Ujian?</h2>
+      <p id="dialog-exam-confirm-desc">Pastikan semua soal telah dijawab. Jawaban tidak bisa diubah setelah dikumpulkan.</p>
+      <div class="form-actions">
+        <button id="btn-exam-confirm-cancel" class="btn btn-ghost" type="button" value="cancel">Batal</button>
+        <button id="btn-exam-confirm-ok" class="btn btn-danger" type="submit" value="confirm">Ya, Kumpulkan</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer id="app-footer" class="app-footer" role="contentinfo">
+    <p id="footer-text">© 2026 SekolahUjian SMK</p>
+    <p id="footer-endpoint-status" class="footer-status" aria-live="polite">belum diatur</p>
+  </footer>
+
+  <script src="script.js" defer=""></script>
+<script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script>
+
+</body></html>
